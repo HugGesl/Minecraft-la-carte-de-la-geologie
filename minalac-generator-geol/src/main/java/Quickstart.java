@@ -49,5 +49,7 @@ public class Quickstart {
 
         // Now display the map
         JMapFrame.showMap(map);
+        
+        
     }
 }
