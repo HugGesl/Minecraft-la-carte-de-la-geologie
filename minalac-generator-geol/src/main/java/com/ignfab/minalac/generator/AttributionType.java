@@ -17,14 +17,10 @@ import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.api.feature.simple.SimpleFeature;
 
 
-/**
- * This is a simplified version of the GeoTools Quickstart application.
- * It prompts the user for a shapefile and prints out its attribute values.
- */
 public class AttributionType {
 
    
-    public static Set<Integer> getCodeLeg(FileDataStore store) throws Exception {
+    public Set<Integer> getCodeLeg(FileDataStore store) throws Exception {
         // display a data store file chooser dialog for shapefiles
        
         SimpleFeatureSource featureSource = store.getFeatureSource();
@@ -50,7 +46,7 @@ public class AttributionType {
         }
         return new HashSet<>(code_leg);}
     
-        public static Map<Integer, SemanticType> createCodeLegToSemanticType(Set<Integer> uniqueElements) {
+        public Map<Integer, SemanticType> createCodeLegToSemanticType(Set<Integer> uniqueElements) {
             // Calcul du nombre de paquets nécessaire pour couvrir toutes les valeurs de code_leg avec les éléments de SemanticType
             int packetsCount = (int) Math.ceil((double) uniqueElements.size() / SemanticType.values().length);
             

@@ -15,6 +15,9 @@ public class TestAttributionType {
     
 	public static void main(String[] args) {
         try {
+        	
+        	AttributionType attributionType = new AttributionType();
+        	
             File file = JFileDataStoreChooser.showOpenFile("shp", null);
             if (file == null) {
                 System.out.println("Aucun fichier sélectionné.");
@@ -22,9 +25,9 @@ public class TestAttributionType {
             }
 
             FileDataStore store = FileDataStoreFinder.getDataStore(file);
-            Set<Integer> uniqueElements = AttributionType.getCodeLeg(store);
+            Set<Integer> uniqueElements = attributionType.getCodeLeg(store);
             
-            Map<Integer, SemanticType> codeLegToSemanticType = AttributionType.createCodeLegToSemanticType(uniqueElements);
+            Map<Integer, SemanticType> codeLegToSemanticType = attributionType.createCodeLegToSemanticType(uniqueElements);
             	
             System.out.println(codeLegToSemanticType);
             // Print the dictionary
