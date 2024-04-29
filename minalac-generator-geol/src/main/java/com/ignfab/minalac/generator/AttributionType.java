@@ -74,6 +74,7 @@ public class AttributionType {
                     // Si l'index dépasse la taille de l'énumération, revenir au début de l'énumération à partir du sixième élément
                     semanticTypeIndex = 5;
                 }
+                
             }
             
             return codeLegToSemanticType;

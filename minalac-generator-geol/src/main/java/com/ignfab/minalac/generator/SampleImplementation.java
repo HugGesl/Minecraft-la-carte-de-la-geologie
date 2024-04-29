@@ -1,50 +1,107 @@
 package com.ignfab.minalac.generator;
 
+import com.ignfab.minalac.Strategies.ContextND;
+import com.ignfab.minalac.Strategies.Init2D;
 import com.ignfab.minalac.generator.minetest.MTVoxelWorld;
 
+import it.geosolutions.jaiext.iterators.RandomIterFactory;
+
+import java.awt.Dimension;
+import java.awt.Rectangle;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.Map;
+import java.util.Set;
+
+import javax.media.jai.iterator.RandomIter;
+
+import org.geotools.api.data.FileDataStore;
+import org.geotools.api.data.FileDataStoreFinder;
+import org.geotools.api.data.SimpleFeatureSource;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.coverage.grid.GridCoverage2D;
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.util.NullProgressListener;
+import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.geotools.process.ProcessException;
+import org.geotools.process.vector.VectorToRasterProcess;
+import org.geotools.swing.data.JFileDataStoreChooser;
 
 /**
  * This is a temporary class to have an idea of how the program works.
  * It generates a Minetest map which is a 3D rendering from a heightmap
  */
 public class SampleImplementation {
-    public static void main(String[] args) throws IOException, OutOfWorldException, MapWriteException {
-        if (args.length != 2) {
-            System.out.println("There must be two arguments : directoryPath and url");
-        } else {
-            System.out.println("Creation of the map ...");
-            System.out.println(args[0]);
-            System.out.println(args[1]);
+    public static void main(String[] args) throws Exception {
+        
 
             //Parent directory must exist
             //Example : "/home/john/.minetest/worlds/map/"
-            String directoryFullPath = args[0];
+            String directoryFullPath = "C:\\Users\\jboli\\Bureau\\ENSG\\projet\\PID\\mes maps\\result\\size10000";
 
             //The function createWorldFromUrl doesn't, for now, handle the parameters.
             //BBOX has to be a square.
             //Width and height have to be one-tenth of the side of the side length of the BBOX's square
 
             //Example "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=595000,6335000,605000,6345000&WIDTH=1000&HEIGHT=1000"
-            String dataUrl = args[1];
-
+            String dataUrl = "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=704662,6584242,714662,6594242&WIDTH=1000&HEIGHT=1000";
+            File file = JFileDataStoreChooser.showOpenFile("shp", null);
+            if (file == null) {
+                System.out.println("Aucun fichier sélectionné.");
+                return;
+            }
             float[] mntArray = getHeightMap(dataUrl);
+            
+            
+    		FileDataStore store = FileDataStoreFinder.getDataStore(file);
+            SimpleFeatureSource featureSource = store.getFeatureSource();
+            SimpleFeatureCollection collection = featureSource.getFeatures();
+            CoordinateReferenceSystem CRS = featureSource.getSchema().getCoordinateReferenceSystem();
+            AttributionType attributionType = new AttributionType();
+            Set<Integer> uniqueElements = attributionType.getCodeLeg(store);
+            Map<Integer, SemanticType> codeLegToSemanticType = attributionType.createCodeLegToSemanticType(uniqueElements);
+            
+         // Obtenez le nom de l'attribut
+            String attributeName = "CODE_LEG";
 
+            // Créer une enveloppe référencée avec les coordonnées et CRS fournis
+            ReferencedEnvelope bounds = new ReferencedEnvelope(704662, 714662, 6584242, 6594242, CRS);
+            
+            // Dimension de la grille
+            Dimension gridDim = new Dimension(1000, 1000);
+            
+            // Chemin de sortie pour les données raster
+            String output = "test";
+            
+            // Surveillant de progression 
+            NullProgressListener monitor = new NullProgressListener();
+
+            System.out.println(attributeName);
+
+
+
+
+            
+	    	GridCoverage2D sorted = VectorToRasterProcess.process(collection,attributeName, gridDim , bounds, output , monitor);
+	    	System.out.println(sorted.getRenderedImage());
+	    	System.out.println("Done");
+
+            
+           
             VoxelWorld worldMnt = new MTVoxelWorld();
-            createWorldFromMnt(mntArray, worldMnt);
+            createWorldFromMnt(mntArray, worldMnt,sorted, CRS, codeLegToSemanticType);
             worldMnt.save(directoryFullPath);
 
             int midPoint = (int) (mntArray.length + Math.sqrt(mntArray.length)) / 2;
             setStaticSpawnPoint(directoryFullPath, 0, (int) mntArray[midPoint] / 10 + 1, 0);
         }
-    }
+    
 
-    private static void createWorldFromMnt(float[] mntArray, VoxelWorld world) throws OutOfWorldException {
+    private static void createWorldFromMnt(float[] mntArray, VoxelWorld world, GridCoverage2D CodeLegGrid,CoordinateReferenceSystem CRS, Map<Integer, SemanticType> codeLegToSemanticType) throws OutOfWorldException {
         int worldLength = (int) Math.sqrt(mntArray.length);
 
         int x, y, z;
@@ -52,7 +109,10 @@ public class SampleImplementation {
         VoxelType grassVT = world.getFactory().createVoxelType(SemanticType.Grass);
         VoxelType stoneVT = world.getFactory().createVoxelType(SemanticType.Stone);
         VoxelType dirtVT = world.getFactory().createVoxelType(SemanticType.Dirt);
-
+        
+        Rectangle bounds = new Rectangle(0,0,1000,1000);
+        RandomIter iterator = RandomIterFactory.create(CodeLegGrid.getRenderedImage(), bounds, true, true);
+      
         for (int i = 0; i < mntArray.length; i++) {
             //Temporary translation so the player spawn at the center of the generated map (player info isn't generated yet on this version)
             x = i % worldLength - worldLength / 2;
@@ -60,13 +120,20 @@ public class SampleImplementation {
             //In this example, we assume that the ratio given by the URL is always 10
             y = (int) mntArray[i] / 10;
             z = i / worldLength - worldLength / 2;
-
-            grassVT.place(x, y, z);
-            dirtVT.place(x, (y - 1), z);
-            dirtVT.place(x, (y - 2), z);
+            
+            int xgrid = i % worldLength;
+            int ygrid = i / worldLength;
+            int CodeLeg = iterator.getSample(xgrid, ygrid, 0);
+            SemanticType BlockType = codeLegToSemanticType.get(CodeLeg);
+            VoxelType BlockX = world.getFactory().createVoxelType(BlockType);
+            
+            
+            BlockX.place(x, y, z);
+            BlockX.place(x, (y - 1), z);
+            BlockX.place(x, (y - 2), z);
 
             for (int y_stone = y - 3; y_stone > y - (3 + 10); y_stone--) {
-                stoneVT.place(x, y_stone, z);
+            	BlockX.place(x, y_stone, z);
             }
         }
     }

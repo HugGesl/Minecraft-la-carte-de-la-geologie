@@ -10,6 +10,8 @@ import org.geotools.swing.data.JFileDataStoreChooser;
 
 import com.ignfab.minalac.generator.AttributionType;
 import com.ignfab.minalac.generator.SemanticType;
+import com.ignfab.minalac.generator.VoxelType;
+import com.ignfab.minalac.generator.VoxelWorld;
 
 public class TestAttributionType {
     
@@ -33,7 +35,16 @@ public class TestAttributionType {
             // Print the dictionary
             for (Map.Entry<Integer, SemanticType> entry : codeLegToSemanticType.entrySet()) {
                 System.out.println("Code Leg: " + entry.getKey() + " -> Semantic Type: " + entry.getValue());
+                
             }
+            int id = 200	;
+            System.out.println( codeLegToSemanticType.get(id));
+            int id2 = 0	;
+            System.out.println( codeLegToSemanticType.get(id2));
+            SemanticType ST = codeLegToSemanticType.get(id);
+            VoxelWorld world = new MTVoxelWorld();
+            VoxelType BlockX = world.getFactory().createVoxelType(ST);
+            System.out.println(BlockX);
         } catch (Exception e) {
             e.printStackTrace();
         }
