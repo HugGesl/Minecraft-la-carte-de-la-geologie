@@ -33,7 +33,15 @@
 	      <artifactId>gt-swing</artifactId>
 	      <version>${geotools.version}</version>
 	    </dependency>
-    
+	    <dependency>
+			<groupId>org.geotools</groupId>
+			<artifactId>gt-main</artifactId>
+		</dependency>
+		<dependency>
+		   <groupId>org.geotools</groupId>
+		   <artifactId>gt-process-feature</artifactId>
+		   <version>${geotools.version}</version>
+		 </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -66,23 +74,51 @@
             <version>2.0.9</version>
         </dependency>
     </dependencies>
-    
-     <repositories>
-	    <repository>
-	    <id>osgeo</id>
-	    <name>OSGeo Release Repository</name>
-	    <url>https://repo.osgeo.org/repository/release/</url>
-	    <snapshots><enabled>false</enabled></snapshots>
-	    <releases><enabled>true</enabled></releases>
-	    </repository>
-	    <repository>
-	    <id>osgeo-snapshot</id>
-	    <name>OSGeo Snapshot Repository</name>
-	    <url>https://repo.osgeo.org/repository/snapshot/</url>
-	    <snapshots><enabled>true</enabled></snapshots>
-	    <releases><enabled>false</enabled></releases>
-	    </repository>
-  	</repositories>
+     <pluginRepositories>
+
+
+    <pluginRepository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>osgeo</id>
+      <name>OSGeo Nexus Maven Repository</name>
+      <url>https://repo.osgeo.org/repository/release/</url>
+    </pluginRepository>
+
+    <pluginRepository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>osgeo-snapshot</id>
+      <name>OSGeo Nexus Maven Repository</name>
+      <url>https://repo.osgeo.org/repository/snapshot/</url>
+    </pluginRepository>
+
+  </pluginRepositories>
+  
+  <repositories>
+    <repository>
+    <id>osgeo</id>
+    <name>OSGeo Release Repository</name>
+    <url>https://repo.osgeo.org/repository/release/</url>
+    <snapshots><enabled>false</enabled></snapshots>
+    <releases><enabled>true</enabled></releases>
+    </repository>
+    <repository>
+    <id>osgeo-snapshot</id>
+    <name>OSGeo Snapshot Repository</name>
+    <url>https://repo.osgeo.org/repository/snapshot/</url>
+    <snapshots><enabled>true</enabled></snapshots>
+    <releases><enabled>false</enabled></releases>
+    </repository>
+  </repositories>
 
     <build>
         <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
@@ -157,4 +193,13 @@
         </plugins>
 
     </build>
+    <dependencyManagement>
+    	<dependencies>
+    		<dependency>
+    			<groupId>org.geotools</groupId>
+    			<artifactId>gt-main</artifactId>
+    			<version>${geotools.version}</version>
+    		</dependency>
+    	</dependencies>
+    </dependencyManagement>
 </project>
