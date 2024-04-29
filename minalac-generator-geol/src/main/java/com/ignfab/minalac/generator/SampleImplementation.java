@@ -38,17 +38,17 @@ import org.geotools.swing.data.JFileDataStoreChooser;
 public class SampleImplementation {
     public static void main(String[] args) throws Exception {
         
-
+    		long startTime = System.currentTimeMillis();
             //Parent directory must exist
             //Example : "/home/john/.minetest/worlds/map/"
-            String directoryFullPath = "C:\\Users\\jboli\\Bureau\\ENSG\\projet\\PID\\mes maps\\result\\size10000";
+            String directoryFullPath = "C:\\Users\\vmn\\Documents\\ENSG\\2023-2024\\PDI\\minetest-5.8.0-win64\\minetest-5.8.0-win64\\worlds\\minecraft";
 
             //The function createWorldFromUrl doesn't, for now, handle the parameters.
             //BBOX has to be a square.
             //Width and height have to be one-tenth of the side of the side length of the BBOX's square
 
             //Example "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=595000,6335000,605000,6345000&WIDTH=1000&HEIGHT=1000"
-            String dataUrl = "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=704662,6584242,714662,6594242&WIDTH=1000&HEIGHT=1000";
+            String dataUrl = "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=878831,6557127,883831,6562127&WIDTH=1000&HEIGHT=1000";
             File file = JFileDataStoreChooser.showOpenFile("shp", null);
             if (file == null) {
                 System.out.println("Aucun fichier sélectionné.");
@@ -69,10 +69,10 @@ public class SampleImplementation {
             String attributeName = "CODE_LEG";
 
             // Créer une enveloppe référencée avec les coordonnées et CRS fournis
-            ReferencedEnvelope bounds = new ReferencedEnvelope(704662, 714662, 6584242, 6594242, CRS);
+            ReferencedEnvelope bounds = new ReferencedEnvelope(878831, 883831, 6557127, 6562127, CRS);
             
             // Dimension de la grille
-            Dimension gridDim = new Dimension(1000, 1000);
+            Dimension gridDim = new Dimension(5000, 5000);
             
             // Chemin de sortie pour les données raster
             String output = "test";
@@ -98,7 +98,18 @@ public class SampleImplementation {
 
             int midPoint = (int) (mntArray.length + Math.sqrt(mntArray.length)) / 2;
             setStaticSpawnPoint(directoryFullPath, 0, (int) mntArray[midPoint] / 10 + 1, 0);
-        }
+            long endTime = System.currentTimeMillis();
+         // Calculer la durée écoulée en millisecondes
+            long elapsedTime = endTime - startTime;
+
+            // Convertir la durée écoulée en heures, minutes et secondes
+            long hours = elapsedTime / (1000 * 60 * 60);
+            long minutes = (elapsedTime % (1000 * 60 * 60)) / (1000 * 60);
+            long seconds = ((elapsedTime % (1000 * 60 * 60)) % (1000 * 60)) / 1000;
+
+            // Afficher le temps écoulé
+            System.out.println("Temps écoulé: " + hours + " heures, " + minutes + " minutes, " + seconds + " secondes");
+    }
     
 
     private static void createWorldFromMnt(float[] mntArray, VoxelWorld world, GridCoverage2D CodeLegGrid,CoordinateReferenceSystem CRS, Map<Integer, SemanticType> codeLegToSemanticType) throws OutOfWorldException {
