@@ -19,7 +19,10 @@ import org.geotools.api.feature.simple.SimpleFeature;
 
 public class AttributionType {
 
-   
+		/*méthode : getCodeLeg(FileDataStore store) 
+		 * objectif : permet d'attribuer au paramètre codeLeg, un sémantic Type,
+		 * de manière aléatoire et équitable.*/
+	
     public Set<Integer> getCodeLeg(FileDataStore store) throws Exception {
         // display a data store file chooser dialog for shapefiles
        
@@ -48,7 +51,7 @@ public class AttributionType {
     
         public Map<Integer, SemanticType> createCodeLegToSemanticType(Set<Integer> uniqueElements) {
             // Calcul du nombre de paquets nécessaire pour couvrir toutes les valeurs de code_leg avec les éléments de SemanticType
-            int packetsCount = (int) Math.ceil((double) uniqueElements.size() / SemanticType.values().length);
+            int packetsCount = (int) Math.ceil((double) uniqueElements.size() / SemanticType.values().length - 5);
             
             // Création du dictionnaire pour associer chaque élément de code_leg à son équivalent dans SemanticType
             Map<Integer, SemanticType> codeLegToSemanticType = new HashMap<>();
@@ -59,11 +62,17 @@ public class AttributionType {
             // Itération sur chaque élément unique de code_leg
             for (Integer codeLeg : uniqueElements) {
                 // Associer l'élément de code_leg avec l'élément correspondant de SemanticType
-                codeLegToSemanticType.put(codeLeg, SemanticType.values()[semanticTypeIndex]);
+            	if (semanticTypeIndex >= 5) {
+                    codeLegToSemanticType.put(codeLeg, SemanticType.values()[semanticTypeIndex]);
+                } else {
+                    // Ignorer les cinq premiers éléments de SemanticType
+                    codeLegToSemanticType.put(codeLeg, SemanticType.values()[semanticTypeIndex + 5]);
+                }
                 
                 // Passer au paquet suivant si nécessaire
-                if (codeLegToSemanticType.size() % packetsCount == 0) {
-                    semanticTypeIndex++;
+                if (++semanticTypeIndex >= SemanticType.values().length) {
+                    // Si l'index dépasse la taille de l'énumération, revenir au début de l'énumération à partir du sixième élément
+                    semanticTypeIndex = 5;
                 }
             }
             
