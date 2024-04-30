@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.imageio.ImageIO;
+
 import java.awt.Dimension;
 
 import org.geotools.api.data.FeatureSource;
@@ -70,7 +73,8 @@ public class ExtractTest {
 
         try {
         	GridCoverage2D sorted = VectorToRasterProcess.process(collection,attributeName, gridDim , bounds, output , monitor);
-        	System.out.println(sorted.getRenderedImage());
+        	File outputFile = new File("C:\\Users\\Moi\\Documents\\PDI\\test.png"); 
+            ImageIO.write(sorted.getRenderedImage(), "png", outputFile); 
         	System.out.println("Done");
 
         } catch (ProcessException e) {
