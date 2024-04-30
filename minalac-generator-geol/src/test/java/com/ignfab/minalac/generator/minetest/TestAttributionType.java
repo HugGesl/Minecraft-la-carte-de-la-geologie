@@ -12,7 +12,7 @@ import com.ignfab.minalac.generator.AttributionType;
 import com.ignfab.minalac.generator.SemanticType;
 import com.ignfab.minalac.generator.VoxelType;
 import com.ignfab.minalac.generator.VoxelWorld;
-
+import java.util.*;
 public class TestAttributionType {
     
 	public static void main(String[] args) {
@@ -37,6 +37,7 @@ public class TestAttributionType {
                 System.out.println("Code Leg: " + entry.getKey() + " -> Semantic Type: " + entry.getValue());
                 
             }
+         
             int id = 200	;
             System.out.println( codeLegToSemanticType.get(id));
             int id2 = 0	;

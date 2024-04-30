@@ -50,35 +50,27 @@ public class AttributionType {
         return new HashSet<>(code_leg);}
     
         public Map<Integer, SemanticType> createCodeLegToSemanticType(Set<Integer> uniqueElements) {
-            // Calcul du nombre de paquets nécessaire pour couvrir toutes les valeurs de code_leg avec les éléments de SemanticType
-            int packetsCount = (int) Math.ceil((double) uniqueElements.size() / SemanticType.values().length - 5);
-            
+        	// Obtenez l'ensemble des types sémantiques de couleur
+            Set<SemanticType> colorSemanticTypes = SemanticType.getColorSemanticTypes();
+
             // Création du dictionnaire pour associer chaque élément de code_leg à son équivalent dans SemanticType
             Map<Integer, SemanticType> codeLegToSemanticType = new HashMap<>();
-            
-            // Index pour parcourir les éléments de SemanticType
-            int semanticTypeIndex = 0;
-            
+
+            // Créer un itérateur sur l'ensemble des types sémantiques de couleur
+            Iterator<SemanticType> iterator = colorSemanticTypes.iterator();
+
             // Itération sur chaque élément unique de code_leg
             for (Integer codeLeg : uniqueElements) {
-                // Associer l'élément de code_leg avec l'élément correspondant de SemanticType
-            	if (semanticTypeIndex >= 5) {
-                    codeLegToSemanticType.put(codeLeg, SemanticType.values()[semanticTypeIndex]);
-                } else {
-                    // Ignorer les cinq premiers éléments de SemanticType
-                    codeLegToSemanticType.put(codeLeg, SemanticType.values()[semanticTypeIndex + 5]);
+                // Si l'itérateur a atteint la fin de l'ensemble, revenir au début
+                if (!iterator.hasNext()) {
+                    iterator = colorSemanticTypes.iterator();
                 }
-                
-                // Passer au paquet suivant si nécessaire
-                if (++semanticTypeIndex >= SemanticType.values().length) {
-                    // Si l'index dépasse la taille de l'énumération, revenir au début de l'énumération à partir du sixième élément
-                    semanticTypeIndex = 5;
-                }
-                
+                // Associer l'élément de code_leg avec l'élément suivant de l'ensemble des types sémantiques de couleur
+                codeLegToSemanticType.put(codeLeg, iterator.next());
             }
-            
+
             return codeLegToSemanticType;
-        }      
+        }     
     }
 
 
