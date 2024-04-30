@@ -34,6 +34,7 @@ import org.geotools.process.vector.VectorToRasterProcess;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.geotools.styling.SLD;
 import org.geotools.swing.JMapFrame;
+import org.geotools.swing.data.JFileDataStoreChooser;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LineString;
@@ -42,8 +43,11 @@ public class ExtractTest {
 
 	public static void main(String[] args) throws IOException {
 		// TODO Auto-generated method stub
-		String fname = "C:\\Users\\Moi\\Documents\\PDI\\harmo\\GEO050K_HARM_001_S_FGEOL_2154.shp";
-		File file = new File(fname);
+		File file = JFileDataStoreChooser.showOpenFile("shp", null);
+        if (file == null) {
+            System.out.println("Aucun fichier sélectionné.");
+            return;
+        }
 		FileDataStore store = FileDataStoreFinder.getDataStore(file);
         SimpleFeatureSource featureSource = store.getFeatureSource();
         SimpleFeatureCollection collection = featureSource.getFeatures();
