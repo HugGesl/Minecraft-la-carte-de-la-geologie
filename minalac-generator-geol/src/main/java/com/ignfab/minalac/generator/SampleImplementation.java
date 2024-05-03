@@ -40,13 +40,14 @@ public class SampleImplementation {
     public static void main(String[] args) throws Exception {
         
 
-    		long startTime = System.currentTimeMillis();
-            //Parent directory must exist
-            //Example : "/home/john/.minetest/worlds/map/"
-            String directoryFullPath = "C:\\Users\\vmn\\Documents\\ENSG\\2023-2024\\PDI\\minetest-5.8.0-win64\\minetest-5.8.0-win64\\worlds\\minecraft";
+         long startTime = System.currentTimeMillis();
+         //Parent directory must exist
+         //Example : "/home/john/.minetest/worlds/map/"
+         String directoryFullPath = "C:\\Users\\vmn\\Documents\\ENSG\\2023-2024\\PDI\\minetest-5.8.0-win64\\minetest-5.8.0-win64\\worlds\\minecraft";
 
 
-         // The function createWorldFromUrl doesn't, for now, handle the parameters.
+    	// The function createWorldFromUrl doesn't, for now, handle the parameters.
+
     	// BBOX has to be a square.
     	// Width and height have to be one-tenth of the side of the side length of the BBOX's square
     	// Example "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=595000,6335000,605000,6345000&WIDTH=1000&HEIGHT=1000"
@@ -78,13 +79,13 @@ public class SampleImplementation {
         System.out.println(xmax);
 
 
-
         // Get width and height
         int width = Integer.parseInt(params.get("WIDTH"));
         int height = Integer.parseInt(params.get("HEIGHT"));
         
         System.out.println(height);
         System.out.println("Done");
+
 
     	// Load shapefile
     	FileDataStore store = FileDataStoreFinder.getDataStore(file);
@@ -136,6 +137,7 @@ public class SampleImplementation {
     
 
     private static void createWorldFromMnt(float[] mntArray, VoxelWorld world, GridCoverage2D codeLegGrid, Map<Integer, SemanticType> codeLegToSemanticType) throws OutOfWorldException {
+
         int worldLength = (int) Math.sqrt(mntArray.length);
         
         System.out.println(worldLength);
@@ -184,33 +186,8 @@ public class SampleImplementation {
         }
     }
     
-    private static void createWorldFromMnt(float[] mntArray, VoxelWorld world) throws OutOfWorldException {
-        int worldLength = (int) Math.sqrt(mntArray.length);
 
-        int x, y, z;
-
-        VoxelType grassVT = world.getFactory().createVoxelType(SemanticType.Grass);
-        VoxelType stoneVT = world.getFactory().createVoxelType(SemanticType.Stone);
-        VoxelType dirtVT = world.getFactory().createVoxelType(SemanticType.Dirt);
-
-        for (int i = 0; i < mntArray.length; i++) {
-            //Temporary translation so the player spawn at the center of the generated map (player info isn't generated yet on this version)
-            x = i % worldLength - worldLength / 2;
-            //Ratio between the side length of the BBOX and width/heigth length
-            //In this example, we assume that the ratio given by the URL is always 10
-            y = (int) mntArray[i] / 10;
-            z = i / worldLength - worldLength / 2;
-
-            grassVT.place(x, y, z);
-            dirtVT.place(x, (y - 1), z);
-            dirtVT.place(x, (y - 2), z);
-
-            for (int y_stone = y - 3; y_stone > y - (3 + 10); y_stone--) {
-                stoneVT.place(x, y_stone, z);
-
-            }
-        }
-    }
+    
 
     private static float[] getHeightMap(String urlString) throws MalformedURLException {
         float[] mntArray;
