@@ -48,7 +48,7 @@ public class SampleImplementation {
             //Width and height have to be one-tenth of the side of the side length of the BBOX's square
 
             //Example "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=595000,6335000,605000,6345000&WIDTH=1000&HEIGHT=1000"
-            String dataUrl = "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=878831,6557127,883831,6562127&WIDTH=1000&HEIGHT=1000";
+            String dataUrl = "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=878831,6557127,880831,6559127&WIDTH=2000&HEIGHT=2000";
             File file = JFileDataStoreChooser.showOpenFile("shp", null);
             if (file == null) {
                 System.out.println("Aucun fichier sélectionné.");
@@ -63,16 +63,17 @@ public class SampleImplementation {
             CoordinateReferenceSystem CRS = featureSource.getSchema().getCoordinateReferenceSystem();
             AttributionType attributionType = new AttributionType();
             Set<Integer> uniqueElements = attributionType.getCodeLeg(store);
+            
             Map<Integer, SemanticType> codeLegToSemanticType = attributionType.createCodeLegToSemanticType(uniqueElements);
             
-         // Obtenez le nom de l'attribut
+            // Obtenez le nom de l'attribut
             String attributeName = "CODE_LEG";
 
             // Créer une enveloppe référencée avec les coordonnées et CRS fournis
-            ReferencedEnvelope bounds = new ReferencedEnvelope(878831, 883831, 6557127, 6562127, CRS);
+            ReferencedEnvelope bounds = new ReferencedEnvelope(878831, 880831, 6557127, 6559127, CRS);
             
             // Dimension de la grille
-            Dimension gridDim = new Dimension(5000, 5000);
+            Dimension gridDim = new Dimension(2000, 2000);
             
             // Chemin de sortie pour les données raster
             String output = "test";
@@ -80,8 +81,7 @@ public class SampleImplementation {
             // Surveillant de progression 
             NullProgressListener monitor = new NullProgressListener();
 
-            System.out.println(attributeName);
-
+            
 
 
 
@@ -93,11 +93,13 @@ public class SampleImplementation {
             
            
             VoxelWorld worldMnt = new MTVoxelWorld();
-            createWorldFromMnt(mntArray, worldMnt,sorted, CRS, codeLegToSemanticType);
+            createWorldFromMnt(mntArray, worldMnt,sorted, CRS, codeLegToSemanticType); 
+            
             worldMnt.save(directoryFullPath);
 
             int midPoint = (int) (mntArray.length + Math.sqrt(mntArray.length)) / 2;
             setStaticSpawnPoint(directoryFullPath, 0, (int) mntArray[midPoint] / 10 + 1, 0);
+            
             long endTime = System.currentTimeMillis();
          // Calculer la durée écoulée en millisecondes
             long elapsedTime = endTime - startTime;
@@ -114,14 +116,16 @@ public class SampleImplementation {
 
     private static void createWorldFromMnt(float[] mntArray, VoxelWorld world, GridCoverage2D CodeLegGrid,CoordinateReferenceSystem CRS, Map<Integer, SemanticType> codeLegToSemanticType) throws OutOfWorldException {
         int worldLength = (int) Math.sqrt(mntArray.length);
-
+        
+        System.out.println(worldLength);
+        
         int x, y, z;
 
         VoxelType grassVT = world.getFactory().createVoxelType(SemanticType.Grass);
         VoxelType stoneVT = world.getFactory().createVoxelType(SemanticType.Stone);
         VoxelType dirtVT = world.getFactory().createVoxelType(SemanticType.Dirt);
         
-        Rectangle bounds = new Rectangle(0,0,1000,1000);
+        Rectangle bounds = new Rectangle(0,0,2000,2000);
         RandomIter iterator = RandomIterFactory.create(CodeLegGrid.getRenderedImage(), bounds, true, true);
       
         for (int i = 0; i < mntArray.length; i++) {
@@ -129,22 +133,32 @@ public class SampleImplementation {
             x = i % worldLength - worldLength / 2;
             //Ratio between the side length of the BBOX and width/heigth length
             //In this example, we assume that the ratio given by the URL is always 10
-            y = (int) mntArray[i] / 10;
+            y = (int) mntArray[i];
             z = i / worldLength - worldLength / 2;
+            
+            if (i%123456 == 0) {
+            	//afin de connaître l'altitude où se placer quand on arrive sur minetest.
+            	System.out.println(x+" "+y+" "+z);
+            }
             
             int xgrid = i % worldLength;
             int ygrid = i / worldLength;
             int CodeLeg = iterator.getSample(xgrid, ygrid, 0);
             SemanticType BlockType = codeLegToSemanticType.get(CodeLeg);
-            VoxelType BlockX = world.getFactory().createVoxelType(BlockType);
+            
+           
+            VoxelType BlockX; 
+            if (BlockType == null) {BlockX = stoneVT;}
+            else {BlockX = world.getFactory().createVoxelType(BlockType);
+            }
             
             
             BlockX.place(x, y, z);
             BlockX.place(x, (y - 1), z);
             BlockX.place(x, (y - 2), z);
 
-            for (int y_stone = y - 3; y_stone > y - (3 + 10); y_stone--) {
-            	BlockX.place(x, y_stone, z);
+            for (int y_bis = y - 3; y_bis > y - (3 + 10); y_bis--) {
+            	BlockX.place(x, y_bis, z);
             }
         }
     }
