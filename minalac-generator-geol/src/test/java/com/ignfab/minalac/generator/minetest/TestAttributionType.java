@@ -26,9 +26,11 @@ public class TestAttributionType {
                 return;
             }
 
-            FileDataStore store = FileDataStoreFinder.getDataStore(file);
-            Set<Integer> uniqueElements = attributionType.getCodeLeg(store);
             
+            FileDataStore store = FileDataStoreFinder.getDataStore(file);
+            
+            Set<Integer> uniqueElements = attributionType.getCodeLeg(store);
+            System.out.println(uniqueElements);
             Map<Integer, SemanticType> codeLegToSemanticType = attributionType.createCodeLegToSemanticType(uniqueElements);
             	
             System.out.println(codeLegToSemanticType);
