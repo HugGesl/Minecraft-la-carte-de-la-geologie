@@ -17,6 +17,7 @@ import java.nio.FloatBuffer;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.media.jai.iterator.RandomIter;
 
@@ -51,7 +52,7 @@ public class SampleImplementation {
     	// BBOX has to be a square.
     	// Width and height have to be one-tenth of the side of the side length of the BBOX's square
     	// Example "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=595000,6335000,605000,6345000&WIDTH=1000&HEIGHT=1000"
-    	String dataUrl = "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=704662,6584242,714662,6594242&WIDTH=1000&HEIGHT=1000";
+    	String dataUrl = "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=878831,6557127,879831,6558127&WIDTH=1000&HEIGHT=1000";
     	
     	
     	float[] mntArray = getHeightMap(dataUrl);
@@ -91,18 +92,23 @@ public class SampleImplementation {
     	FileDataStore store = FileDataStoreFinder.getDataStore(file);
     	SimpleFeatureSource featureSource = store.getFeatureSource();
     	SimpleFeatureCollection collection = featureSource.getFeatures();
+    	
     	CoordinateReferenceSystem CRS = featureSource.getSchema().getCoordinateReferenceSystem();
-
-    	// Get unique elements
+    	
+    	// Create ReferencedEnvelope
+    	ReferencedEnvelope bounds = new ReferencedEnvelope(xmin, xmax, ymin, ymax, CRS);
+    	
+    	// Attribution Type sémantique 
     	AttributionType attributionType = new AttributionType();
-    	Set<Integer> uniqueElements = attributionType.getCodeLeg(store);
+    	SimpleFeatureCollection filteredFeatures = attributionType.filterFeatures(collection, bounds);
+    	
+    	List<Integer> uniqueElements = attributionType.getCodeLeg(filteredFeatures);
     	Map<Integer, SemanticType> codeLegToSemanticType = attributionType.createCodeLegToSemanticType(uniqueElements);
 
 
     	// Get attribute name
     	String attributeName = "CODE_LEG";
-    	// Create ReferencedEnvelope
-    	ReferencedEnvelope bounds = new ReferencedEnvelope(xmin, xmax, ymin, ymax, CRS);
+    	
     	// Grid dimension
     	Dimension gridDim = new Dimension(width, height);
     	// Output name for raster data
