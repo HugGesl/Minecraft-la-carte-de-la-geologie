@@ -3,6 +3,9 @@ package com.ignfab.minalac.generator;
 import com.ignfab.minalac.Strategies.ContextND;
 import com.ignfab.minalac.Strategies.Init2D;
 import com.ignfab.minalac.generator.minetest.MTVoxelWorld;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 
 import it.geosolutions.jaiext.iterators.RandomIterFactory;
 
@@ -192,6 +195,32 @@ public class SampleImplementation {
         }
     }
     
+    private static void createWorldFromMnt(float[] mntArray, VoxelWorld world) throws OutOfWorldException {
+        int worldLength = (int) Math.sqrt(mntArray.length);
+
+        int x, y, z;
+
+        VoxelType grassVT = world.getFactory().createVoxelType(SemanticType.Grass);
+        VoxelType stoneVT = world.getFactory().createVoxelType(SemanticType.Stone);
+        VoxelType dirtVT = world.getFactory().createVoxelType(SemanticType.Dirt);
+
+        for (int i = 0; i < mntArray.length; i++) {
+            //Temporary translation so the player spawn at the center of the generated map (player info isn't generated yet on this version)
+            x = i % worldLength - worldLength / 2;
+            //Ratio between the side length of the BBOX and width/heigth length
+            //In this example, we assume that the ratio given by the URL is always 10
+            y = (int) mntArray[i];
+            z = i / worldLength - worldLength / 2;
+
+            grassVT.place(x, y, z);
+            dirtVT.place(x, (y - 1), z);
+            dirtVT.place(x, (y - 2), z);
+
+            for (int y_stone = y - 3; y_stone > y - (3 + 10); y_stone--) {
+                stoneVT.place(x, y_stone, z);
+            }
+        }
+    }
 
     
 
@@ -250,4 +279,63 @@ public class SampleImplementation {
         }
         return map;
     }
+    
+public void createWorldFromCsv3D(String Fpath,VoxelWorld world, String directoryFullPath) throws OutOfWorldException, MapWriteException, IOException {
+    	
+
+    	VoxelType AINF = world.getFactory().createVoxelType(SemanticType.Blue);
+        VoxelType CARB = world.getFactory().createVoxelType(SemanticType.Green);
+        VoxelType ASUP = world.getFactory().createVoxelType(SemanticType.Cyan);
+        VoxelType LATE = world.getFactory().createVoxelType(SemanticType.Orange);
+        int E_Late;
+        int E_ASUP;
+        int E_CARB;
+        int E_AINF;
+        int y;
+        int n = 0;
+        int x;
+        int z;
+    	
+        try (Reader reader = new FileReader(Fpath);
+                CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withDelimiter(';').withIgnoreEmptyLines().withTrim())) {
+        	  csvParser.iterator().next();
+               for (CSVRecord csvRecord : csvParser) {
+            	   x = n % 90;
+            	   z = n / 90;
+            	   System.out.println(n);    
+            	   E_Late = csvRecord.get(5).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(5).replace(',', '.'));
+                   E_ASUP = csvRecord.get(8).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(8).replace(',', '.'));
+                   E_CARB = csvRecord.get(11).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(11).replace(',', '.'));
+                   E_AINF = csvRecord.get(13).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(13).replace(',', '.'));
+                   System.out.println(n);   
+                
+                y = 0;
+                for (int i = 0; i < E_AINF; i++) {
+                	AINF.place(x,i+y,z);
+                }
+                y = E_AINF;
+               
+                for (int i = 0; i < E_CARB; i++) {
+                	CARB.place(x,i+y,z);
+                }
+                y = y + E_CARB;
+                
+                for (int i = 0; i < E_ASUP; i++) {
+                	ASUP.place(x,i+y,z);
+                }
+                y = y + E_ASUP;
+            
+                for (int i = 0; i < E_Late; i++) {
+                	LATE.place(x,i+y,z);
+                }
+                n = n+1;
+                
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    world.save(directoryFullPath);
+   }
+
+    
 }
