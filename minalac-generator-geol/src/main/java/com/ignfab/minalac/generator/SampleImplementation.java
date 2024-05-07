@@ -10,6 +10,7 @@ import it.geosolutions.jaiext.iterators.RandomIterFactory;
 
 import java.awt.Dimension;
 import java.awt.Rectangle;
+import java.awt.image.RenderedImage;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -21,15 +22,19 @@ import java.util.Set;
 import java.util.HashMap;
 import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.media.jai.iterator.RandomIter;
 
 import org.geotools.api.data.FileDataStore;
 import org.geotools.api.data.FileDataStoreFinder;
 import org.geotools.api.data.SimpleFeatureSource;
+import org.geotools.api.geometry.Position;
 import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 import org.geotools.coverage.grid.GridCoverage2D;
+import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.util.NullProgressListener;
+import org.geotools.geometry.Position2D;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.process.ProcessException;
 import org.geotools.process.vector.VectorToRasterProcess;
@@ -41,6 +46,7 @@ import org.geotools.swing.data.JFileDataStoreChooser;
  */
 public class SampleImplementation {
     public static void main(String[] args) throws Exception {
+
     	if (args.length != 3) {
             System.out.println("There must be 3 arguments : directoryFullPath , dataUrl , Method ");}
     	else {
@@ -143,21 +149,21 @@ public class SampleImplementation {
 	    }
 	}
 
+
     
     // fonction générant une carte Minetest à partir d'un fichier SHP des couches géologiques vecteurs harmonisées
     private static void createWorldFromSHP(float[] mntArray, VoxelWorld world, GridCoverage2D codeLegGrid, Map<Integer, SemanticType> codeLegToSemanticType) throws OutOfWorldException {
 
         int worldLength = (int) Math.sqrt(mntArray.length);
         
-        System.out.println(worldLength);
-        
+
         int x, y, z;
         VoxelType stoneVT = world.getFactory().createVoxelType(SemanticType.Stone);
 
         Rectangle bounds = new Rectangle(0,0,1000,1000);
         RandomIter iterator = RandomIterFactory.create(codeLegGrid.getRenderedImage(), bounds, true, true);
 
-      
+        System.out.println("Map en cours de creation");
         for (int i = 0; i < mntArray.length; i++) {
             //Temporary translation so the player spawn at the center of the generated map (player info isn't generated yet on this version)
             x = i % worldLength - worldLength / 2;
@@ -166,10 +172,6 @@ public class SampleImplementation {
             y = (int) mntArray[i];
             z = i / worldLength - worldLength / 2;
             
-            if (i%123456 == 0) {
-            	//afin de connaître l'altitude où se placer quand on arrive sur minetest.
-            	System.out.println(x+" "+y+" "+z);
-            }
             
             // x et y équivalent entre la gridcoverage et le MNT
             int xgrid = i % worldLength;
@@ -185,16 +187,11 @@ public class SampleImplementation {
             else {BlockX = world.getFactory().createVoxelType(BlockType);
             }
             
-            
+           
             BlockX.place(x, y, z);
             BlockX.place(x, (y - 1), z);
             BlockX.place(x, (y - 2), z);
 
-
-            for (int y_bis = y - 3; y_bis > y - (3 + 10); y_bis--) {
-            	BlockX.place(x, y_bis, z);
-
-            }
         }
     }
     
