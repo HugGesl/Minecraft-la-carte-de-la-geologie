@@ -1,7 +1,6 @@
 package com.ignfab.minalac.generator;
 
 import com.ignfab.minalac.Strategies.ContextND;
-import com.ignfab.minalac.Strategies.Init2D;
 import com.ignfab.minalac.generator.minetest.MTVoxelWorld;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -42,110 +41,111 @@ import org.geotools.swing.data.JFileDataStoreChooser;
  */
 public class SampleImplementation {
     public static void main(String[] args) throws Exception {
-        
-
-         long startTime = System.currentTimeMillis();
-         //Parent directory must exist
-         //Example : "/home/john/.minetest/worlds/map/"
-         String directoryFullPath = "C:\\Users\\vmn\\Documents\\ENSG\\2023-2024\\PDI\\minetest-5.8.0-win64\\minetest-5.8.0-win64\\worlds\\minecraft";
-
-
-    	// The function createWorldFromUrl doesn't, for now, handle the parameters.
-
-    	// BBOX has to be a square.
-    	// Width and height have to be one-tenth of the side of the side length of the BBOX's square
-    	// Example "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=595000,6335000,605000,6345000&WIDTH=1000&HEIGHT=1000"
-    	String dataUrl = "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=878831,6557127,879831,6558127&WIDTH=1000&HEIGHT=1000";
-    	
-    	
-    	float[] mntArray = getHeightMap(dataUrl);
-    	
-    	// Choose a shapefile
-    	File file = JFileDataStoreChooser.showOpenFile("shp", null);
-    	if (file == null) {
-    	    System.out.println("Aucun fichier sélectionné.");
-    	    return;
-    	}
-    	
-
-    	 // Extract parameters from dataUrl
-        Map<String, String> params = getParams(dataUrl);
-        
-
-        
-        // Get bbox values
-        String bboxStr = params.get("BBOX");
-        String[] bboxValues = bboxStr.split(",");
-        double xmin = Double.parseDouble(bboxValues[0]);
-        double ymin = Double.parseDouble(bboxValues[1]);
-        double xmax = Double.parseDouble(bboxValues[2]);
-        double ymax = Double.parseDouble(bboxValues[3]);
-        System.out.println(xmax);
-
-
-        // Get width and height
-        int width = Integer.parseInt(params.get("WIDTH"));
-        int height = Integer.parseInt(params.get("HEIGHT"));
-        
-        System.out.println(height);
-        System.out.println("Done");
-
-
-    	// Load shapefile
-    	FileDataStore store = FileDataStoreFinder.getDataStore(file);
-    	SimpleFeatureSource featureSource = store.getFeatureSource();
-    	SimpleFeatureCollection collection = featureSource.getFeatures();
-    	
-    	CoordinateReferenceSystem CRS = featureSource.getSchema().getCoordinateReferenceSystem();
-    	
-    	// Create ReferencedEnvelope
-    	ReferencedEnvelope bounds = new ReferencedEnvelope(xmin, xmax, ymin, ymax, CRS);
-    	
-    	// Attribution Type sémantique 
-    	AttributionType attributionType = new AttributionType();
-    	SimpleFeatureCollection filteredFeatures = attributionType.filterFeatures(collection, bounds);
-    	
-    	List<Integer> uniqueElements = attributionType.getCodeLeg(filteredFeatures);
-    	Map<Integer, SemanticType> codeLegToSemanticType = attributionType.createCodeLegToSemanticType(uniqueElements);
-
-
-    	// Get attribute name
-    	String attributeName = "CODE_LEG";
-    	
-    	// Grid dimension
-    	Dimension gridDim = new Dimension(width, height);
-    	// Output name for raster data
-    	String output = "MapGeol";
-    	// Progress monitor
-    	NullProgressListener monitor = new NullProgressListener();
-
-    	// Convert vector data to raster
-    	GridCoverage2D sorted = VectorToRasterProcess.process(collection, attributeName, gridDim, bounds, output, monitor);
-
-    	// Create voxel world
-    	VoxelWorld worldMnt = new MTVoxelWorld();
-    	createWorldFromMnt(mntArray, worldMnt, sorted, codeLegToSemanticType);
-    	worldMnt.save(directoryFullPath);
-
-    	// Set spawn point
-        int midPoint = (int) (mntArray.length + Math.sqrt(mntArray.length)) / 2;
-        setStaticSpawnPoint(directoryFullPath, 0, (int) mntArray[midPoint] / 10 + 1, 0);
-        long endTime = System.currentTimeMillis();
-     // Calculer la durée écoulée en millisecondes
-        long elapsedTime = endTime - startTime;
-
-        // Convertir la durée écoulée en heures, minutes et secondes
-        long hours = elapsedTime / (1000 * 60 * 60);
-        long minutes = (elapsedTime % (1000 * 60 * 60)) / (1000 * 60);
-        long seconds = ((elapsedTime % (1000 * 60 * 60)) % (1000 * 60)) / 1000;
-
-        // Afficher le temps écoulé
-        System.out.println("Temps écoulé: " + hours + " heures, " + minutes + " minutes, " + seconds + " secondes");
-    }
+    	if (args.length != 3) {
+            System.out.println("There must be 3 arguments : directoryFullPath , dataUrl , Method ");}
+    	else {
+	
+	         long startTime = System.currentTimeMillis();
+	        
+	         //Example : "/home/john/.minetest/worlds/map/"
+	         String directoryFullPath = args[0];
+	         String dataUrl = args[1];
+	    
+	
+	    	// BBOX has to be a square.
+	    	// Width and height have to be one-tenth of the side of the side length of the BBOX's square
+	    	// Example "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=595000,6335000,605000,6345000&WIDTH=1000&HEIGHT=1000"
+	    	
+	    	
+	    	float[] mntArray = getHeightMap(dataUrl);
+	    	
+	    	// Choose a shapefile
+	    	File file = JFileDataStoreChooser.showOpenFile("shp", null);
+	    	if (file == null) {
+	    	    System.out.println("Aucun fichier sélectionné.");
+	    	    return;
+	    	}
+	    	
+	
+	    	 // Extract parameters from dataUrl
+	        Map<String, String> params = getParams(dataUrl);
+	        
+	
+	        
+	        // Get bbox values
+	        String bboxStr = params.get("BBOX");
+	        String[] bboxValues = bboxStr.split(",");
+	        double xmin = Double.parseDouble(bboxValues[0]);
+	        double ymin = Double.parseDouble(bboxValues[1]);
+	        double xmax = Double.parseDouble(bboxValues[2]);
+	        double ymax = Double.parseDouble(bboxValues[3]);
+	        System.out.println(xmax);
+	
+	
+	        // Get width and height
+	        int width = Integer.parseInt(params.get("WIDTH"));
+	        int height = Integer.parseInt(params.get("HEIGHT"));
+	        
+	        System.out.println(height);
+	        System.out.println("Done");
+	
+	
+	    	// Load shapefile
+	    	FileDataStore store = FileDataStoreFinder.getDataStore(file);
+	    	SimpleFeatureSource featureSource = store.getFeatureSource();
+	    	SimpleFeatureCollection collection = featureSource.getFeatures();
+	    	
+	    	CoordinateReferenceSystem CRS = featureSource.getSchema().getCoordinateReferenceSystem();
+	    	
+	    	// Create ReferencedEnvelope
+	    	ReferencedEnvelope bounds = new ReferencedEnvelope(xmin, xmax, ymin, ymax, CRS);
+	    	
+	    	// Attribution Type sémantique 
+	    	AttributionType attributionType = new AttributionType();
+	    	SimpleFeatureCollection filteredFeatures = attributionType.filterFeatures(collection, bounds);
+	    	
+	    	List<Integer> uniqueElements = attributionType.getCodeLeg(filteredFeatures);
+	    	Map<Integer, SemanticType> codeLegToSemanticType = attributionType.createCodeLegToSemanticType(uniqueElements);
+	
+	
+	    	// Get attribute name
+	    	String attributeName = "CODE_LEG";
+	    	
+	    	// Grid dimension
+	    	Dimension gridDim = new Dimension(width, height);
+	    	// Output name for raster data
+	    	String output = "MapGeol";
+	    	// Progress monitor
+	    	NullProgressListener monitor = new NullProgressListener();
+	
+	    	// Convert vector data to raster
+	    	GridCoverage2D sorted = VectorToRasterProcess.process(collection, attributeName, gridDim, bounds, output, monitor);
+	
+	    	// Create voxel world
+	    	VoxelWorld worldMnt = new MTVoxelWorld();
+	    	createWorldFromSHP(mntArray, worldMnt, sorted, codeLegToSemanticType);
+	    	worldMnt.save(directoryFullPath);
+	
+	    	// Set spawn point
+	        int midPoint = (int) (mntArray.length + Math.sqrt(mntArray.length)) / 2;
+	        setStaticSpawnPoint(directoryFullPath, 0, (int) mntArray[midPoint] / 10 + 1, 0);
+	        long endTime = System.currentTimeMillis();
+	     // Calculer la durée écoulée en millisecondes
+	        long elapsedTime = endTime - startTime;
+	
+	        // Convertir la durée écoulée en heures, minutes et secondes
+	        long hours = elapsedTime / (1000 * 60 * 60);
+	        long minutes = (elapsedTime % (1000 * 60 * 60)) / (1000 * 60);
+	        long seconds = ((elapsedTime % (1000 * 60 * 60)) % (1000 * 60)) / 1000;
+	
+	        // Afficher le temps écoulé
+	        System.out.println("Temps écoulé: " + hours + " heures, " + minutes + " minutes, " + seconds + " secondes");
+	    }
+	}
 
     
-
-    private static void createWorldFromMnt(float[] mntArray, VoxelWorld world, GridCoverage2D codeLegGrid, Map<Integer, SemanticType> codeLegToSemanticType) throws OutOfWorldException {
+    // fonction générant une carte Minetest à partir d'un fichier SHP des couches géologiques vecteurs harmonisées
+    private static void createWorldFromSHP(float[] mntArray, VoxelWorld world, GridCoverage2D codeLegGrid, Map<Integer, SemanticType> codeLegToSemanticType) throws OutOfWorldException {
 
         int worldLength = (int) Math.sqrt(mntArray.length);
         
@@ -171,13 +171,16 @@ public class SampleImplementation {
             	System.out.println(x+" "+y+" "+z);
             }
             
+            // x et y équivalent entre la gridcoverage et le MNT
             int xgrid = i % worldLength;
             int ygrid = i / worldLength;
             int CodeLeg = iterator.getSample(xgrid, ygrid, 0);
             SemanticType BlockType = codeLegToSemanticType.get(CodeLeg);
             
            
+            
             VoxelType BlockX; 
+            // gestion des zones dont l'information géologique est nulle
             if (BlockType == null) {BlockX = stoneVT;}
             else {BlockX = world.getFactory().createVoxelType(BlockType);
             }
@@ -215,7 +218,7 @@ public class SampleImplementation {
             grassVT.place(x, y, z);
             dirtVT.place(x, (y - 1), z);
             dirtVT.place(x, (y - 2), z);
-
+            
             for (int y_stone = y - 3; y_stone > y - (3 + 10); y_stone--) {
                 stoneVT.place(x, y_stone, z);
             }
@@ -334,7 +337,7 @@ public void createWorldFromCsv3D(String Fpath,VoxelWorld world, String directory
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-    world.save(directoryFullPath);
+   
    }
 
     
