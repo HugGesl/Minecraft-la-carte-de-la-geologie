@@ -3,6 +3,9 @@ package com.ignfab.minalac.generator;
 import com.ignfab.minalac.Strategies.ContextND;
 import com.ignfab.minalac.Strategies.Init2D;
 import com.ignfab.minalac.generator.minetest.MTVoxelWorld;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 
 import it.geosolutions.jaiext.iterators.RandomIterFactory;
 
@@ -18,6 +21,7 @@ import java.nio.FloatBuffer;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.media.jai.iterator.RandomIter;
@@ -56,7 +60,9 @@ public class SampleImplementation {
     	// BBOX has to be a square.
     	// Width and height have to be one-tenth of the side of the side length of the BBOX's square
     	// Example "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=595000,6335000,605000,6345000&WIDTH=1000&HEIGHT=1000"
-    	String dataUrl = "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=886723,6543233,887723,6544233&WIDTH=1000&HEIGHT=1000";
+
+    	String dataUrl = "https://data.geopf.fr/wms-r/wms?LAYERS=RGEALTI-MNT_PYR-ZIP_FXX_LAMB93_WMS&FORMAT=image/x-bil;bits=32&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&STYLES=&CRS=EPSG:2154&BBOX=878831,6557127,879831,6558127&WIDTH=1000&HEIGHT=1000";
+
     	
     	
     	float[] mntArray = getHeightMap(dataUrl);
@@ -95,19 +101,26 @@ public class SampleImplementation {
     	FileDataStore store = FileDataStoreFinder.getDataStore(file);
     	SimpleFeatureSource featureSource = store.getFeatureSource();
     	SimpleFeatureCollection collection = featureSource.getFeatures();
+    	
     	CoordinateReferenceSystem CRS = featureSource.getSchema().getCoordinateReferenceSystem();
     	System.out.println("Shapefile load");
 
-    	// Get unique elements
+
+    	
+    	// Create ReferencedEnvelope
+    	ReferencedEnvelope bounds = new ReferencedEnvelope(xmin, xmax, ymin, ymax, CRS);
+    	
+    	// Attribution Type sémantique 
     	AttributionType attributionType = new AttributionType();
-    	Set<Integer> uniqueElements = attributionType.getCodeLeg(store);
+    	SimpleFeatureCollection filteredFeatures = attributionType.filterFeatures(collection, bounds);
+    	
+    	List<Integer> uniqueElements = attributionType.getCodeLeg(filteredFeatures);
     	Map<Integer, SemanticType> codeLegToSemanticType = attributionType.createCodeLegToSemanticType(uniqueElements);
 
 
     	// Get attribute name
     	String attributeName = "CODE_LEG";
-    	// Create ReferencedEnvelope
-    	ReferencedEnvelope bounds = new ReferencedEnvelope(xmin, xmax, ymin, ymax, CRS);
+    	
     	// Grid dimension
     	Dimension gridDim = new Dimension(width, height);
     	// Output name for raster data
@@ -118,7 +131,6 @@ public class SampleImplementation {
 
     	// Convert vector data to raster
     	GridCoverage2D sorted = VectorToRasterProcess.process(collection, attributeName, gridDim, bounds, output, monitor);
-    	RenderedImage grid = sorted.getRenderedImage();
     	
     	 System.out.println("Rasterisation complete");
     	 
@@ -191,6 +203,32 @@ public class SampleImplementation {
         }
     }
     
+    private static void createWorldFromMnt(float[] mntArray, VoxelWorld world) throws OutOfWorldException {
+        int worldLength = (int) Math.sqrt(mntArray.length);
+
+        int x, y, z;
+
+        VoxelType grassVT = world.getFactory().createVoxelType(SemanticType.Grass);
+        VoxelType stoneVT = world.getFactory().createVoxelType(SemanticType.Stone);
+        VoxelType dirtVT = world.getFactory().createVoxelType(SemanticType.Dirt);
+
+        for (int i = 0; i < mntArray.length; i++) {
+            //Temporary translation so the player spawn at the center of the generated map (player info isn't generated yet on this version)
+            x = i % worldLength - worldLength / 2;
+            //Ratio between the side length of the BBOX and width/heigth length
+            //In this example, we assume that the ratio given by the URL is always 10
+            y = (int) mntArray[i];
+            z = i / worldLength - worldLength / 2;
+
+            grassVT.place(x, y, z);
+            dirtVT.place(x, (y - 1), z);
+            dirtVT.place(x, (y - 2), z);
+
+            for (int y_stone = y - 3; y_stone > y - (3 + 10); y_stone--) {
+                stoneVT.place(x, y_stone, z);
+            }
+        }
+    }
 
     
 
@@ -249,4 +287,63 @@ public class SampleImplementation {
         }
         return map;
     }
+    
+public void createWorldFromCsv3D(String Fpath,VoxelWorld world, String directoryFullPath) throws OutOfWorldException, MapWriteException, IOException {
+    	
+
+    	VoxelType AINF = world.getFactory().createVoxelType(SemanticType.Blue);
+        VoxelType CARB = world.getFactory().createVoxelType(SemanticType.Green);
+        VoxelType ASUP = world.getFactory().createVoxelType(SemanticType.Cyan);
+        VoxelType LATE = world.getFactory().createVoxelType(SemanticType.Orange);
+        int E_Late;
+        int E_ASUP;
+        int E_CARB;
+        int E_AINF;
+        int y;
+        int n = 0;
+        int x;
+        int z;
+    	
+        try (Reader reader = new FileReader(Fpath);
+                CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withDelimiter(';').withIgnoreEmptyLines().withTrim())) {
+        	  csvParser.iterator().next();
+               for (CSVRecord csvRecord : csvParser) {
+            	   x = n % 90;
+            	   z = n / 90;
+            	   System.out.println(n);    
+            	   E_Late = csvRecord.get(5).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(5).replace(',', '.'));
+                   E_ASUP = csvRecord.get(8).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(8).replace(',', '.'));
+                   E_CARB = csvRecord.get(11).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(11).replace(',', '.'));
+                   E_AINF = csvRecord.get(13).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(13).replace(',', '.'));
+                   System.out.println(n);   
+                
+                y = 0;
+                for (int i = 0; i < E_AINF; i++) {
+                	AINF.place(x,i+y,z);
+                }
+                y = E_AINF;
+               
+                for (int i = 0; i < E_CARB; i++) {
+                	CARB.place(x,i+y,z);
+                }
+                y = y + E_CARB;
+                
+                for (int i = 0; i < E_ASUP; i++) {
+                	ASUP.place(x,i+y,z);
+                }
+                y = y + E_ASUP;
+            
+                for (int i = 0; i < E_Late; i++) {
+                	LATE.place(x,i+y,z);
+                }
+                n = n+1;
+                
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    world.save(directoryFullPath);
+   }
+
+    
 }
