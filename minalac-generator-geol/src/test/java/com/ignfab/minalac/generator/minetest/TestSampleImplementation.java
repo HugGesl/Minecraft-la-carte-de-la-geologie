@@ -8,7 +8,7 @@ public class TestSampleImplementation {
 		String directoryFullPath = "C:\\Users\\jboli\\Bureau\\installer\\minetest-5.8.0-win64\\minetest-5.8.0-win64\\worlds\\MapFrom3D";
 		VoxelWorld worldGeo3D = new MTVoxelWorld();
 		SampleImplementation test = new SampleImplementation();
-		test.createWorldFromCsv3D(Fpath,worldGeo3D, directoryFullPath);
+		test.createWorldFromCsv3D(Fpath,worldGeo3D);
 		
 	}
 }
