@@ -47,31 +47,26 @@ import org.geotools.swing.data.JFileDataStoreChooser;
 public class SampleImplementation {
     public static void main(String[] args) throws Exception {
 
-    	if (args.length != 3) {
-            System.out.println("There must be 3 arguments : directoryFullPath , dataUrl , Method ");}
+    	if (args.length != 4) {
+            System.out.println("There must be 3 arguments : directoryFullPath , dataUrl for MNT or 3D model csv, Method (From3D,FromMNT or FromSHP), if you are making a geological 2.5D write the fullpath of your shp file else write null ");}
     	else {
     		long startTime = System.currentTimeMillis();
     		VoxelWorld world = new MTVoxelWorld();
     		String directoryFullPath = args[0];
  	        String dataUrl = args[1];
     		
-    		if (args[2] == "3D") {
+    		if (args[2] == "From3D") {
     			createWorldFromCsv3D(dataUrl , world);	
     		}
     		
     		else {
     			float[] mntArray = getHeightMap(dataUrl);
-    			if (args[2] == "MNT") {
+    			if (args[2] == "FromMNT") {
     				createWorldFromMnt(mntArray,  world);
     			}
-    			if(args[2] == "SHP") {
-    				File file = JFileDataStoreChooser.showOpenFile("shp", null);
-    		    	if (file == null) {
-    		    		System.out.println("Selectionnez votre fichier csv correspondant à un modèle 3D");
-    		    	    System.out.println("Aucun fichier sélectionné.");
-    		    	    return;
-    		    	}
-    		    	 // Extract parameters from dataUrl
+    			if(args[2] == "FromSHP") {
+    				File file = new File(args[3]);
+    		    	// Extract parameters from dataUrl
     		        Map<String, String> params = getParams(dataUrl);
 
     		        // Get bbox values
@@ -97,12 +92,13 @@ public class SampleImplementation {
     		    	SimpleFeatureSource featureSource = store.getFeatureSource();
     		    	SimpleFeatureCollection collection = featureSource.getFeatures();
     		    	
+    		    	// extract EPSG for the Enveloppe
     		    	CoordinateReferenceSystem CRS = featureSource.getSchema().getCoordinateReferenceSystem();
     		    	
-    		    	// Create ReferencedEnvelope
+    		    	// Create ReferencedEnvelope, this object permits us to extract shp data on the bbox througth an intersection
     		    	ReferencedEnvelope bounds = new ReferencedEnvelope(xmin, xmax, ymin, ymax, CRS);
     		    	
-    		    	// Attribution Type sémantique 
+    		    	// Attribution du Type sémantique 
     		    	AttributionType attributionType = new AttributionType();
     		    	SimpleFeatureCollection filteredFeatures = attributionType.filterFeatures(collection, bounds);
     		    	
@@ -164,7 +160,8 @@ public class SampleImplementation {
 
         int x, y, z;
         VoxelType stoneVT = world.getFactory().createVoxelType(SemanticType.Stone);
-
+        
+       
         Rectangle bounds = new Rectangle(0,0,1000,1000);
         RandomIter iterator = RandomIterFactory.create(codeLegGrid.getRenderedImage(), bounds, true, true);
 
@@ -228,7 +225,7 @@ public class SampleImplementation {
     }
 
     
-
+    // fonction présente dans le code fourni par l'ENSG
     private static float[] getHeightMap(String urlString) throws MalformedURLException {
         float[] mntArray;
         URL url = new URL(urlString);
@@ -268,7 +265,7 @@ public class SampleImplementation {
             printWriter.close();
         }
     }
-    
+    // fonction extrayant les coordonnées de la bbox de la requête MNT
     private static Map<String, String> getParams(String urlString) throws MalformedURLException {
         URL url = new URL(urlString);
         String query = url.getQuery();
@@ -284,14 +281,16 @@ public class SampleImplementation {
         }
         return map;
     }
-    
-public static void createWorldFromCsv3D(String Fpath,VoxelWorld world) throws OutOfWorldException, MapWriteException, IOException {
+    //fonction créant une carte minecraft à partir d'un modèle CSV 3D
+    public static void createWorldFromCsv3D(String Fpath,VoxelWorld world) throws OutOfWorldException, MapWriteException, IOException {
     	
-
+    	// génération des blocks
     	VoxelType AINF = world.getFactory().createVoxelType(SemanticType.Blue);
         VoxelType CARB = world.getFactory().createVoxelType(SemanticType.Green);
         VoxelType ASUP = world.getFactory().createVoxelType(SemanticType.Cyan);
         VoxelType LATE = world.getFactory().createVoxelType(SemanticType.Orange);
+        
+        // le code est ici adapté au seul CSV fourni par la BRGM
         int E_Late;
         int E_ASUP;
         int E_CARB;
@@ -300,11 +299,13 @@ public static void createWorldFromCsv3D(String Fpath,VoxelWorld world) throws Ou
         int n = 0;
         int x;
         int z;
-    	
+    	//lecture du csv
         try (Reader reader = new FileReader(Fpath);
                 CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withDelimiter(';').withIgnoreEmptyLines().withTrim())) {
         	  csvParser.iterator().next();
                for (CSVRecord csvRecord : csvParser) {
+            	   
+            	   //la carte fera 90*90blocks pour correspondre à la grille d'échantillonnage du csv
             	   x = n % 90;
             	   z = n / 90;
             	   System.out.println(n);    
@@ -314,6 +315,7 @@ public static void createWorldFromCsv3D(String Fpath,VoxelWorld world) throws Ou
                    E_AINF = csvRecord.get(13).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(13).replace(',', '.'));
                    System.out.println(n);   
                 
+                //ajout d'un block par mètre d'épaisseur de couche(le couches étant toujours empilés dans le même ordre)
                 y = 0;
                 for (int i = 0; i < E_AINF; i++) {
                 	AINF.place(x,i+y,z);
