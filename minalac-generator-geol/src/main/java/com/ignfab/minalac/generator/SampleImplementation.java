@@ -47,8 +47,8 @@ import org.geotools.swing.data.JFileDataStoreChooser;
 public class SampleImplementation {
     public static void main(String[] args) throws Exception {
 
-    	if (args.length != 3) {
-            System.out.println("There must be 3 arguments : directoryFullPath , dataUrl , Method ");}
+    	if (args.length != 4) {
+            System.out.println("There must be 3 arguments : directoryFullPath ,dataUrl , Method ");}
     	else {
     		long startTime = System.currentTimeMillis();
     		VoxelWorld world = new MTVoxelWorld();
@@ -65,12 +65,8 @@ public class SampleImplementation {
     				createWorldFromMnt(mntArray,  world);
     			}
     			if(args[2] == "SHP") {
-    				File file = JFileDataStoreChooser.showOpenFile("shp", null);
-    		    	if (file == null) {
-    		    		System.out.println("Selectionnez votre fichier csv correspondant à un modèle 3D");
-    		    	    System.out.println("Aucun fichier sélectionné.");
-    		    	    return;
-    		    	}
+    				File file = new File(dataUrl);
+    		    	
     		    	 // Extract parameters from dataUrl
     		        Map<String, String> params = getParams(dataUrl);
 
