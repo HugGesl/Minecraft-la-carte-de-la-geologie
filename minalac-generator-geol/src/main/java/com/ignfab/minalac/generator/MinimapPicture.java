@@ -61,6 +61,7 @@ class MinimapPicture {
         return requestBuilder.toString();
     }
 	
+	
     public void saveImage(String filePath) throws IOException {
         String requestUrl = buildGeologieRequest(minX, minY, maxX, maxY, width, height, epsg, format);
 

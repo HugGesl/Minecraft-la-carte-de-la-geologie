@@ -10,7 +10,6 @@ import it.geosolutions.jaiext.iterators.RandomIterFactory;
 
 import java.awt.Dimension;
 import java.awt.Rectangle;
-import java.awt.image.RenderedImage;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -18,28 +17,20 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.Map;
-import java.util.Set;
 import java.util.HashMap;
 import java.util.List;
 
-import javax.imageio.ImageIO;
 import javax.media.jai.iterator.RandomIter;
 
 import org.geotools.api.data.FileDataStore;
 import org.geotools.api.data.FileDataStoreFinder;
 import org.geotools.api.data.SimpleFeatureSource;
-import org.geotools.api.geometry.Position;
 import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 import org.geotools.coverage.grid.GridCoverage2D;
-import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.util.NullProgressListener;
-import org.geotools.geometry.Position2D;
 import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.geotools.process.ProcessException;
 import org.geotools.process.vector.VectorToRasterProcess;
-import org.geotools.swing.data.JFileDataStoreChooser;
-
 /**
  * This is a temporary class to have an idea of how the program works.
  * It generates a Minetest map which is a 3D rendering from a heightmap
@@ -47,27 +38,29 @@ import org.geotools.swing.data.JFileDataStoreChooser;
 public class SampleImplementation {
     public static void main(String[] args) throws Exception {
 
-    	if (args.length != 4) {
+    	if (args.length <= 3) {
 
-            System.out.println("There must be 3 arguments : directoryFullPath , dataUrl for MNT or 3D model csv, Method (From3D,FromMNT or FromSHP), if you are making a geological 2.5D write the fullpath of your shp file else write null ");}
+            System.out.println("There must be 3 arguments at least : directoryFullPath , dataUrl for MNT or 3D model csv, Method (From3D,FromMNT or FromSHP), if you are making a geological 2.5D write the fullpath of your shp file else write null ");
 
+    	}
     	else {
     		long startTime = System.currentTimeMillis();
     		VoxelWorld world = new MTVoxelWorld();
     		String directoryFullPath = args[0];
  	        String dataUrl = args[1];
-    		
-    		if (args[2] == "From3D") {
+    		if (args[2].equals("From3D")) {
     			createWorldFromCsv3D(dataUrl , world);	
     		}
     		
     		else {
     			float[] mntArray = getHeightMap(dataUrl);
-    			if (args[2] == "FromMNT") {
+    			System.out.println("Etape 1");
+    			if (args[2].equals("FromMNT")) {
     				createWorldFromMnt(mntArray,  world);
     			}
 
-    			if(args[2] == "FromSHP") {
+    			if(args[2].equals("FromSHP")) {
+    				System.out.println("Etape 2");
     				File file = new File(args[3]);
     		    	// Extract parameters from dataUrl
 
@@ -80,23 +73,22 @@ public class SampleImplementation {
     		        double ymin = Double.parseDouble(bboxValues[1]);
     		        double xmax = Double.parseDouble(bboxValues[2]);
     		        double ymax = Double.parseDouble(bboxValues[3]);
-    		        System.out.println(xmax);
+
     		
     		
     		        // Get width and height
     		        int width = Integer.parseInt(params.get("WIDTH"));
     		        int height = Integer.parseInt(params.get("HEIGHT"));
-    		        
-    		        System.out.println(height);
-    		        System.out.println("Done");
+    		        System.out.println("Etape 3");
+
     		
     		
     		    	// Load shapefile
     		    	FileDataStore store = FileDataStoreFinder.getDataStore(file);
     		    	SimpleFeatureSource featureSource = store.getFeatureSource();
     		    	SimpleFeatureCollection collection = featureSource.getFeatures();
-    		    	
-    		    	// extract EPSG for the Enveloppe
+
+    		    	// Extract EPSG for the Enveloppe
     		    	CoordinateReferenceSystem CRS = featureSource.getSchema().getCoordinateReferenceSystem();
     		    	
     		    	// Create ReferencedEnvelope, this object permits us to extract shp data on the bbox througth an intersection
@@ -122,24 +114,26 @@ public class SampleImplementation {
     		
     		    	// Convert vector data to raster
     		    	GridCoverage2D sorted = VectorToRasterProcess.process(collection, attributeName, gridDim, bounds, output, monitor);
-    		    	
+
     		    	//
     		    	MinimapPicture mp = new MinimapPicture(xmin, ymin, xmax, ymax, width, height, "2154" , "png");
-    		        mp.saveImage("../output.png");
+    		        mp.saveImage(directoryFullPath + "Minimap/vignette_map.png");
     		    	
-    		        // Create voxel world
-    		    	
-    		    	createWorldFromSHP(mntArray, world, sorted, codeLegToSemanticType);
-    		    	// Set spawn point
+    		     // Set spawn point
     		        int midPoint = (int) (mntArray.length + Math.sqrt(mntArray.length)) / 2;
     		        setStaticSpawnPoint(directoryFullPath, 0, (int) mntArray[midPoint] / 10 + 1, 0);
+    		        
+    		        // Create voxel world
+    		    	createWorldFromSHP(mntArray, world, sorted, codeLegToSemanticType, height, width);
+
+    	    		
     		    	
     				
     			}
     		}
-	         
+
     		world.save(directoryFullPath);
-	    	
+    		
 	        long endTime = System.currentTimeMillis();
 	     // Calculer la durée écoulée en millisecondes
 	        long elapsedTime = endTime - startTime;
@@ -157,7 +151,7 @@ public class SampleImplementation {
 
     
     // fonction générant une carte Minetest à partir d'un fichier SHP des couches géologiques vecteurs harmonisées
-    private static void createWorldFromSHP(float[] mntArray, VoxelWorld world, GridCoverage2D codeLegGrid, Map<Integer, SemanticType> codeLegToSemanticType) throws OutOfWorldException {
+    private static void createWorldFromSHP(float[] mntArray, VoxelWorld world, GridCoverage2D codeLegGrid, Map<Integer, SemanticType> codeLegToSemanticType, int height, int width) throws OutOfWorldException {
 
         int worldLength = (int) Math.sqrt(mntArray.length);
         
@@ -166,16 +160,17 @@ public class SampleImplementation {
         VoxelType stoneVT = world.getFactory().createVoxelType(SemanticType.Stone);
         
        
-        Rectangle bounds = new Rectangle(0,0,1000,1000);
+        Rectangle bounds = new Rectangle(0,0,height, width);
         RandomIter iterator = RandomIterFactory.create(codeLegGrid.getRenderedImage(), bounds, true, true);
-
+       
         System.out.println("Map en cours de creation");
+        
         for (int i = 0; i < mntArray.length; i++) {
             //Temporary translation so the player spawn at the center of the generated map (player info isn't generated yet on this version)
             x = i % worldLength - worldLength / 2;
             //Ratio between the side length of the BBOX and width/heigth length
             //In this example, we assume that the ratio given by the URL is always 10
-            y = (int) mntArray[i];
+            y =  (int) mntArray[i]/10;
             z = i / worldLength - worldLength / 2;
             
             
@@ -184,7 +179,6 @@ public class SampleImplementation {
             int ygrid = i / worldLength;
             int CodeLeg = iterator.getSample(xgrid, ygrid, 0);
             SemanticType BlockType = codeLegToSemanticType.get(CodeLeg);
-            
            
             
             VoxelType BlockX; 
@@ -197,8 +191,10 @@ public class SampleImplementation {
             BlockX.place(x, y, z);
             BlockX.place(x, (y - 1), z);
             BlockX.place(x, (y - 2), z);
+            
 
         }
+        System.out.println("Done");
     }
     
     private static void createWorldFromMnt(float[] mntArray, VoxelWorld world) throws OutOfWorldException {
@@ -229,7 +225,7 @@ public class SampleImplementation {
     }
 
     
-    // fonction présente dans le code fourni par l'ENSG
+    // fonction présente dans le code fourni par l'IGNFab
     private static float[] getHeightMap(String urlString) throws MalformedURLException {
         float[] mntArray;
         URL url = new URL(urlString);
@@ -319,7 +315,7 @@ public class SampleImplementation {
                    E_AINF = csvRecord.get(13).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(13).replace(',', '.'));
                    System.out.println(n);   
                 
-                //ajout d'un block par mètre d'épaisseur de couche(le couches étant toujours empilés dans le même ordre)
+                //ajout d'un block par mètre d'épaisseur de couche(les couches étant toujours empilées dans le même ordre)
                 y = 0;
                 for (int i = 0; i < E_AINF; i++) {
                 	AINF.place(x,i+y,z);

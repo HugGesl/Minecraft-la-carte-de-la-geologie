@@ -50,24 +50,33 @@ public class MTVoxelWorld implements VoxelWorld {
 
     public void save(String directoryFullPath) throws MapWriteException {
         File mapDirectory = new File(directoryFullPath);
-        if (mapDirectory.mkdir()) {
-            //Files containing the necessary information to identify the folder as a map
-            createFile(mapDirectory.getAbsolutePath() + "/world.mt", "enable_damage = true\n" +
-                    "creative_mode = true\n" +
-                    "auth_backend = sqlite3\n" +
-                    "player_backend = sqlite3\n" +
-                    "gameid = minetest");
-            createFile(mapDirectory.getAbsolutePath() + "/map_meta.txt", "mapgen_limit = 31000\n" +
-                    "mg_name = singlenode\n" +
-                    "[end_of_params]");
+        if (!mapDirectory.exists()) {
+            if (mapDirectory.mkdirs()) {
+                System.out.println("The folder has been successfully created in : " + directoryFullPath);
 
-            SqlLiteMapWriter database = new SqlLiteMapWriter(mapDirectory.getAbsolutePath() + "/");
-            for (Map.Entry<Integer, Block> entry : blocks.entrySet()) {
-                database.insertBlock(entry.getKey(), entry.getValue());
+                createFile(mapDirectory.getAbsolutePath() + "/world.mt", "enable_damage = true\n" +
+                        "creative_mode = true\n" +
+                        "auth_backend = sqlite3\n" +
+                        "player_backend = sqlite3\n" +
+                        "gameid = minetest");
+
+                createFile(mapDirectory.getAbsolutePath() + "/map_meta.txt", "mapgen_limit = 31000\n" +
+                        "mg_name = singlenode\n" +
+                        "[end_of_params]");
+
+
+                SqlLiteMapWriter database = new SqlLiteMapWriter(mapDirectory.getAbsolutePath() + "/");
+                for (Map.Entry<Integer, Block> entry : blocks.entrySet()) {
+                    database.insertBlock(entry.getKey(), entry.getValue());
+                }
+            } else {
+                throw new MapWriteException("Can not generate the map since the folder " + mapDirectory.getAbsolutePath() + " can not be created");
             }
-        } else
-            throw new MapWriteException("Can not generate the map since the folder" + mapDirectory.getAbsolutePath() + " can not be created");
+        } else {
+            System.out.println("The folder already exists in : " + directoryFullPath);
+        }
     }
+
 
     private void createFile(String path, String content) throws MapWriteException {
         File file = new File(path);
