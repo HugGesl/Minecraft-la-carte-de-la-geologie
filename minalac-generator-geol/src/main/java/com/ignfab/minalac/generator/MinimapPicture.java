@@ -34,24 +34,25 @@ class MinimapPicture {
         this.format = format;
     }
 	
+	//requête pour récupérer la vignette
 	private static String buildGeologieRequest(double minX, double minY, double maxX, double maxY, int width, int height, String epsg, String format) {
         StringBuilder requestBuilder = new StringBuilder();
         requestBuilder.append("https://geoservices.brgm.fr/geologie?");
         requestBuilder.append("SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&TRANSPARENT=TRUE&LAYERS=GEOLOGIE&");
 
         try {
-            // Encode bounding box parameters
+
             String bbox = URLEncoder.encode(minX + "," + minY + "," + maxX + "," + maxY, "UTF-8");
             requestBuilder.append("BBOX=").append(bbox).append("&");
 
-            // Add width and height
+
             requestBuilder.append("WIDTH=").append(width).append("&");
             requestBuilder.append("HEIGHT=").append(height).append("&");
 
-            // Add EPSG code
+
             requestBuilder.append("SRS=EPSG%3A").append(epsg).append("&");
             
-            // Add format image
+
             requestBuilder.append("FORMAT=image%2F").append(format);
             
         } catch (UnsupportedEncodingException e) {
@@ -61,14 +62,17 @@ class MinimapPicture {
         return requestBuilder.toString();
     }
 	
-	
-    public void saveImage(String filePath) throws IOException {
+	//sauvegarde l'image
+	public void saveImage(String filePath) throws IOException {
         String requestUrl = buildGeologieRequest(minX, minY, maxX, maxY, width, height, epsg, format);
 
         URL url = new URL(requestUrl);
         BufferedImage image = ImageIO.read(url);
 
-        File outputFile = new File(filePath);
+
+        File outputFile = new File(filePath + "/vignette_map." + format);
+        outputFile.getParentFile().mkdirs();
+
         ImageIO.write(image, format, outputFile);
     }
 
