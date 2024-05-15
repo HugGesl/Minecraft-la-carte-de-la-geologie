@@ -48,50 +48,57 @@ public class SampleImplementation {
     		VoxelWorld world = new MTVoxelWorld();
     		String directoryFullPath = args[0];
  	        String dataUrl = args[1];
+ 	        
+ 	       System.out.println("Request parameters get");
+ 	        // Extract parameters from dataUrl
+	        Map<String, String> params = getParams(dataUrl);
+
+	        // Get bbox values
+	        String bboxStr = params.get("BBOX");
+	        String[] bboxValues = bboxStr.split(",");
+	        double xmin = Double.parseDouble(bboxValues[0]);
+	        double ymin = Double.parseDouble(bboxValues[1]);
+	        double xmax = Double.parseDouble(bboxValues[2]);
+	        double ymax = Double.parseDouble(bboxValues[3]);
+
+
+	        // Get width and height
+	        int width = Integer.parseInt(params.get("WIDTH"));
+	        int height = Integer.parseInt(params.get("HEIGHT"));
+
+
+ 	        
+ 	        
+ 	        
     		if (args[2].equals("From3D")) {
+    			System.out.println("3D selected");
     			createWorldFromCsv3D(dataUrl , world);	
     		}
-    		
     		else {
+    			System.out.println("2.5D selected");
+    			System.out.println("Loading RGE-ALTI");
     			float[] mntArray = getHeightMap(dataUrl);
-    			System.out.println("Etape 1");
+    			
+    			
     			if (args[2].equals("FromMNT")) {
     				createWorldFromMnt(mntArray,  world);
     			}
 
     			if(args[2].equals("FromSHP")) {
-    				System.out.println("Etape 2");
     				File file = new File(args[3]);
-    		    	// Extract parameters from dataUrl
-
-    		        Map<String, String> params = getParams(dataUrl);
-
-    		        // Get bbox values
-    		        String bboxStr = params.get("BBOX");
-    		        String[] bboxValues = bboxStr.split(",");
-    		        double xmin = Double.parseDouble(bboxValues[0]);
-    		        double ymin = Double.parseDouble(bboxValues[1]);
-    		        double xmax = Double.parseDouble(bboxValues[2]);
-    		        double ymax = Double.parseDouble(bboxValues[3]);
-
-    		
-    		
-    		        // Get width and height
-    		        int width = Integer.parseInt(params.get("WIDTH"));
-    		        int height = Integer.parseInt(params.get("HEIGHT"));
-    		        System.out.println("Etape 3");
-
-    		
-    		
+    		    	
+    				System.out.println("Loading shapefile");
     		    	// Load shapefile
     		    	FileDataStore store = FileDataStoreFinder.getDataStore(file);
     		    	SimpleFeatureSource featureSource = store.getFeatureSource();
     		    	SimpleFeatureCollection collection = featureSource.getFeatures();
+    		    	
+    		    	System.out.println("Shapefile loaded");
 
     		    	// Extract EPSG for the Enveloppe
     		    	CoordinateReferenceSystem CRS = featureSource.getSchema().getCoordinateReferenceSystem();
     		    	
-    		    	// Create ReferencedEnvelope, this object permits us to extract shp data on the bbox througth an intersection
+    		    	// Create ReferencedEnvelope, this object allow us to extract shp data on the bbox through an intersection
     		    	ReferencedEnvelope bounds = new ReferencedEnvelope(xmin, xmax, ymin, ymax, CRS);
     		    	
     		    	// Attribution du Type sémantique 
@@ -100,39 +107,36 @@ public class SampleImplementation {
     		    	
     		    	List<Integer> uniqueElements = attributionType.getCodeLeg(filteredFeatures);
     		    	Map<Integer, SemanticType> codeLegToSemanticType = attributionType.createCodeLegToSemanticType(uniqueElements);
-    		
-    		
-    		    	// Get attribute name
-    		    	String attributeName = "CODE_LEG";
-    		    	
-    		    	// Grid dimension
+    
+    		    	String attributeName = "CODE_LEG";  		    	
     		    	Dimension gridDim = new Dimension(width, height);
-    		    	// Output name for raster data
-    		    	String output = "MapGeol";
-    		    	// Progress monitor
+    		    	String output = "MapGeol";  		    	
     		    	NullProgressListener monitor = new NullProgressListener();
-    		
+    		    	
+    		    	System.out.println("Rasterization in progress");
     		    	// Convert vector data to raster
     		    	GridCoverage2D sorted = VectorToRasterProcess.process(collection, attributeName, gridDim, bounds, output, monitor);
-
-    		    	//
-    		    	MinimapPicture mp = new MinimapPicture(xmin, ymin, xmax, ymax, width, height, "2154" , "png");
-    		        mp.saveImage(directoryFullPath + "Minimap/vignette_map.png");
+    		    	System.out.println("Rasterization done");
     		    	
-    		     // Set spawn point
-    		        int midPoint = (int) (mntArray.length + Math.sqrt(mntArray.length)) / 2;
-    		        setStaticSpawnPoint(directoryFullPath, 0, (int) mntArray[midPoint] / 10 + 1, 0);
+    		    	
+    		    	//MinimapPicture mp = new MinimapPicture(xmin, ymin, xmax, ymax, width, height, "2154" , "png");
+    		        //mp.saveImage(directoryFullPath);
+    		    	
     		        
-    		        // Create voxel world
+    		        
+    		        
     		    	createWorldFromSHP(mntArray, world, sorted, codeLegToSemanticType, height, width);
-
-    	    		
     		    	
-    				
     			}
+    			// Set spawn point (ne fonctionne plus)
+    	       /* int midPoint = (int) (mntArray.length + Math.sqrt(mntArray.length)) / 2;
+    	        setStaticSpawnPoint(directoryFullPath, 0, (int) mntArray[midPoint] / 10 + 1, 0);*/
     		}
-
+    		
+    		
+	        
     		world.save(directoryFullPath);
+    		System.out.println("Done");
     		
 	        long endTime = System.currentTimeMillis();
 	     // Calculer la durée écoulée en millisecondes
@@ -170,7 +174,7 @@ public class SampleImplementation {
             x = i % worldLength - worldLength / 2;
             //Ratio between the side length of the BBOX and width/heigth length
             //In this example, we assume that the ratio given by the URL is always 10
-            y =  (int) mntArray[i]/10;
+            y =  (int) mntArray[i];
             z = i / worldLength - worldLength / 2;
             
             
@@ -179,22 +183,20 @@ public class SampleImplementation {
             int ygrid = i / worldLength;
             int CodeLeg = iterator.getSample(xgrid, ygrid, 0);
             SemanticType BlockType = codeLegToSemanticType.get(CodeLeg);
-           
-            
             VoxelType BlockX; 
+            
             // gestion des zones dont l'information géologique est nulle
             if (BlockType == null) {BlockX = stoneVT;}
             else {BlockX = world.getFactory().createVoxelType(BlockType);
             }
             
-           
-            BlockX.place(x, y, z);
-            BlockX.place(x, (y - 1), z);
-            BlockX.place(x, (y - 2), z);
+           for (int ybis = y; ybis > y - 10; ybis--) {
+                BlockX.place(x, ybis, z);
+            }
             
 
         }
-        System.out.println("Done");
+        
     }
     
     private static void createWorldFromMnt(float[] mntArray, VoxelWorld world) throws OutOfWorldException {
@@ -225,7 +227,7 @@ public class SampleImplementation {
     }
 
     
-    // fonction présente dans le code fourni par l'IGNFab
+
     private static float[] getHeightMap(String urlString) throws MalformedURLException {
         float[] mntArray;
         URL url = new URL(urlString);
@@ -265,7 +267,8 @@ public class SampleImplementation {
             printWriter.close();
         }
     }
-    // fonction extrayant les coordonnées de la bbox de la requête MNT
+    
+    // fonction extrayant les paramètres de la requête MNT
     private static Map<String, String> getParams(String urlString) throws MalformedURLException {
         URL url = new URL(urlString);
         String query = url.getQuery();
@@ -281,7 +284,8 @@ public class SampleImplementation {
         }
         return map;
     }
-    //fonction créant une carte minecraft à partir d'un modèle CSV 3D
+    
+    //fonction créant une carte minetest à partir d'un modèle CSV 3D
     public static void createWorldFromCsv3D(String Fpath,VoxelWorld world) throws OutOfWorldException, MapWriteException, IOException {
     	
     	// génération des blocks
@@ -308,12 +312,12 @@ public class SampleImplementation {
             	   //la carte fera 90*90blocks pour correspondre à la grille d'échantillonnage du csv
             	   x = n % 90;
             	   z = n / 90;
-            	   System.out.println(n);    
+   
             	   E_Late = csvRecord.get(5).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(5).replace(',', '.'));
                    E_ASUP = csvRecord.get(8).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(8).replace(',', '.'));
                    E_CARB = csvRecord.get(11).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(11).replace(',', '.'));
                    E_AINF = csvRecord.get(13).isEmpty() ? 0 : (int) Double.parseDouble(csvRecord.get(13).replace(',', '.'));
-                   System.out.println(n);   
+
                 
                 //ajout d'un block par mètre d'épaisseur de couche(les couches étant toujours empilées dans le même ordre)
                 y = 0;
@@ -343,6 +347,4 @@ public class SampleImplementation {
         }
    
    }
-
-    
 }

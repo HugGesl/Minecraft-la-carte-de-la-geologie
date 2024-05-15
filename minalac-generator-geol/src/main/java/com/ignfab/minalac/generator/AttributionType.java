@@ -38,10 +38,9 @@ public class AttributionType {
 	
    
 	public SimpleFeatureCollection filterFeatures(SimpleFeatureCollection features, ReferencedEnvelope envelope) {
-        // Filtrer les fonctionnalités basées sur l'enveloppe
+
         SimpleFeatureIterator iterator = features.features();
         try {
-            // Créer une collection pour stocker les fonctionnalités filtrées
             DefaultFeatureCollection filteredFeatures = new DefaultFeatureCollection();
             Geometry envelopeGeometry = JTS.toGeometry(envelope);
             
@@ -49,7 +48,7 @@ public class AttributionType {
                 SimpleFeature feature = iterator.next();
                 Geometry geometry = (Geometry) feature.getDefaultGeometry();
 
-                // Vérifier si la géométrie de la fonctionnalité est à l'intérieur de l'enveloppe
+                // Vérifie si la géométrie de la fonctionnalité est à l'intérieur de l'enveloppe
                 if (geometry.intersects(envelopeGeometry)) {
                     filteredFeatures.add(feature);
                 }
@@ -64,9 +63,6 @@ public class AttributionType {
 	
 	public List<Integer> getCodeLeg(SimpleFeatureCollection features) throws Exception {
         // display a data store file chooser dialog for shapefiles
-       
-      
-        
         List<Integer> code_leg = new ArrayList<>();
         
         SimpleFeatureIterator iterator = features.features();
@@ -90,22 +86,19 @@ public class AttributionType {
 	
     
         public Map<Integer, SemanticType> createCodeLegToSemanticType(List<Integer> uniqueElements) {
-        	// Obtenez l'ensemble des types sémantiques de couleur
+  
             Set<SemanticType> colorSemanticTypes = SemanticType.getColorSemanticTypes();
 
-            // Création du dictionnaire pour associer chaque élément de code_leg à son équivalent dans SemanticType
             Map<Integer, SemanticType> codeLegToSemanticType = new HashMap<>();
 
-            // Créer un itérateur sur l'ensemble des types sémantiques de couleur
             Iterator<SemanticType> iterator = colorSemanticTypes.iterator();
 
-            // Itération sur chaque élément unique de code_leg
             for (Integer codeLeg : uniqueElements) {
                 // Si l'itérateur a atteint la fin de l'ensemble, revenir au début
                 if (!iterator.hasNext()) {
                     iterator = colorSemanticTypes.iterator();
                 }
-                // Associer l'élément de code_leg avec l'élément suivant de l'ensemble des types sémantiques de couleur
+                // Associe l'élément de code_leg avec l'élément suivant de l'ensemble des types sémantiques de couleur
                 codeLegToSemanticType.put(codeLeg, iterator.next());
             }
 
